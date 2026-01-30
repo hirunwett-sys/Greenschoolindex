@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id          String       @id @default(cuid())
+  name        String
+  country     String
+  createdAt  DateTime     @default(now())
+  evaluations Evaluation[]
+}
+
+model Evaluation {
+  id        String            @id @default(cuid())
+  schoolId  String
+  total     Float
+  createdAt DateTime          @default(now())
+
+  school    School            @relation(fields: [schoolId], references: [id])
+  scores    EvaluationScore[]
+}
+
+model Criteria {
+  id     String  @id @default(cuid())
+  name   String
+  weight Float
+  scores EvaluationScore[]
+}
+
+model EvaluationScore {
+  id           String   @id @default(cuid())
+  evaluationId String
+  criteriaId   String
+  score        Float
+
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id])
+  criteria   Criteria   @relation(fields: [criteriaId], references: [id])
+}
