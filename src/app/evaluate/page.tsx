@@ -14,7 +14,6 @@ import {
   Info
 } from 'lucide-react';
 
-// Define the actual GSI criteria structure
 const gsiCriteria = [
   {
     id: 'sti',
@@ -40,7 +39,6 @@ const gsiCriteria = [
       { id: 'wmr2', name: 'ใช้น้ำทางเลือกหรือนำน้ำกลับมาใช้ซ้ำ', maxScore: 7 },
       { id: 'wmr3', name: 'มีระบบลดของเสียและการรีไซเคิล', maxScore: 7 },
       { id: 'wmr4', name: 'การจัดซื้อวัสดุอย่างยั่งยืน', maxScore: 7 },
-    //! todo: calculate / 34 , ปรับหน้าคำถามให้ตัวเลือกที่ 5 เต็มที่ 6 คะแนน ส่วนข้อ 1-4 เต็มที่ 7 คะแนน
       { id: 'wmr5', name: 'สนับสนุนแนวคิดเศรษฐกิจหมุนเวียน', maxScore: 6 }
     ]
   },
@@ -209,7 +207,7 @@ export default function EvaluatePage(): JSX.Element {
     return total;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -221,23 +219,39 @@ export default function EvaluatePage(): JSX.Element {
 
     const totalScore = calculateTotalScore();
 
-    // Store in sessionStorage
-    sessionStorage.setItem(
-      'evaluationResult',
-      JSON.stringify({
-        schoolName: formData.schoolName,
-        coverage: formData.coverage,
-        area: formData.area,
-        staff: formData.staff,
-        scores: formData.scores,
-        totalScore,
-        submittedAt: new Date().toISOString()
-      })
-    );
+    try {
+      const response = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          schoolName: formData.schoolName,
+          coverage: formData.coverage,
+          area: formData.area,
+          staff: formData.staff,
+          scores: formData.scores,
+          totalScore,
+        }),
+      });
 
-    setTimeout(() => {
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit evaluation');
+      }
+
+      const result = await response.json();
+
+      // Store result ID in sessionStorage for highlighting in summary page
+      sessionStorage.setItem('newEvaluationId', result.id);
+
+      // Navigate to summary page
       router.push('/summary');
-    }, 500);
+    } catch (error) {
+      console.error('Error submitting evaluation:', error);
+      alert('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง');
+      setIsSubmitting(false);
+    }
   };
 
   return (

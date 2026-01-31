@@ -8,36 +8,70 @@ datasource db {
 }
 
 model School {
-  id          String       @id @default(cuid())
-  name        String
-  country     String
-  createdAt  DateTime     @default(now())
-  evaluations Evaluation[]
+  id          String   @id @default(cuid())
+  schoolName  String   @map("school_name")
+  coverage    String?  // whole, building, full
+  area        String   // พื้นที่ใช้สอยรวม (ตร.ม.)
+  staff       String   // จำนวนบุคลากร
+  totalScore  Int      @map("total_score")
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  scores Score[]
+
+  @@map("schools")
 }
 
-model Evaluation {
-  id        String            @id @default(cuid())
-  schoolId  String
-  total     Float
-  createdAt DateTime          @default(now())
+model Score {
+  id        String   @id @default(cuid())
+  schoolId  String   @map("school_id")
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  // Site, Transportation & Infrastructure (STI)
+  sti1      Int      @default(0) // การจัดการที่ดินและพื้นที่สีเขียว
+  sti2      Int      @default(0) // การเดินทางที่ยั่งยืน
+  sti3      Int      @default(0) // โครงสร้างพื้นฐานคาร์บอนต่ำ/EV
+  sti4      Int      @default(0) // การเข้าถึงพื้นที่สำหรับทุกคน
+  
+  // Water & Material Resources (WMR)
+  wmr1      Int      @default(0) // วัดและลดการใช้น้ำ
+  wmr2      Int      @default(0) // น้ำทางเลือก/น้ำใช้ซ้ำ
+  wmr3      Int      @default(0) // ลดของเสีย/รีไซเคิล
+  wmr4      Int      @default(0) // จัดซื้อวัสดุอย่างยั่งยืน
+  wmr5      Int      @default(0) // เศรษฐกิจหมุนเวียน
+  
+  // Energy, Carbon & Climate (ECC)
+  ecc1      Int      @default(0) // ข้อมูลและติดตามพลังงาน
+  ecc2      Int      @default(0) // ประสิทธิภาพพลังงาน
+  ecc3      Int      @default(0) // พลังงานหมุนเวียน
+  ecc4      Int      @default(0) // คำนวณและรายงาน GHG
+  ecc5      Int      @default(0) // เป้าหมาย/แผนลดคาร์บอน
+  
+  // Health, Wellbeing & Quality of Life (HWQ)
+  hwq1      Int      @default(0) // คุณภาพอากาศ แสง ความสบาย
+  hwq2      Int      @default(0) // สุขภาพและความปลอดภัย
+  hwq3      Int      @default(0) // Universal Design
+  
+  // Governance, Planning & Management (GPM)
+  gpm1      Int      @default(0) // โครงสร้างบริหารความยั่งยืน
+  gpm2      Int      @default(0) // แผน เป้าหมาย ตัวชี้วัด
+  gpm3      Int      @default(0) // รายงานและปรับปรุงต่อเนื่อง
+  
+  // Innovation & Local Priorities (ILP)
+  ilp1      Int      @default(0) // นวัตกรรมเกินเกณฑ์
+  ilp2      Int      @default(0) // ตอบโจทย์บริบทพื้นที่
+  
+  // Education, Research & Engagement (ERE)
+  ere1      Int      @default(0) // นโยบายโรงเรียนสีเขียว
+  ere2      Int      @default(0) // แผนงานและงบประมาณ
+  ere3      Int      @default(0) // ระบบติดตามและรายงานผล
+  ere4      Int      @default(0) // พัฒนาและปรับปรุงต่อเนื่อง
+  ere5      Int      @default(0) // ถ่ายทอดสู่ชุมชน/สังคม
 
-  school    School            @relation(fields: [schoolId], references: [id])
-  scores    EvaluationScore[]
-}
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-model Criteria {
-  id     String  @id @default(cuid())
-  name   String
-  weight Float
-  scores EvaluationScore[]
-}
-
-model EvaluationScore {
-  id           String   @id @default(cuid())
-  evaluationId String
-  criteriaId   String
-  score        Float
-
-  evaluation Evaluation @relation(fields: [evaluationId], references: [id])
-  criteria   Criteria   @relation(fields: [criteriaId], references: [id])
+  @@unique([schoolId])
+  @@map("scores")
 }

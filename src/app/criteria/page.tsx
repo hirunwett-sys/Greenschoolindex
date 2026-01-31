@@ -10,7 +10,6 @@ import {
   Award
 } from 'lucide-react';
 
-// Define the main criteria based on GSI standards
 const gsiCriteria = [
   {
     id: 'environment',
@@ -131,7 +130,6 @@ const gsiCriteria = [
   }
 ];
 
-// Rating levels based on GSI standards
 const ratingLevels = [
   { level: 'PLATINUM', range: '116-145 คะแนน', color: 'from-slate-400 to-slate-600', score: '80%+' },
   { level: 'GOLD', range: '102-115 คะแนน', color: 'from-yellow-400 to-amber-500', score: '70-79%' },

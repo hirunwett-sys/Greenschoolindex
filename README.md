@@ -1,140 +1,134 @@
-# Green School Index (GSI) 
+# Green School Index (GSI)
+
+Green School Index (GSI) คือเว็บแอปสำหรับประเมินและจัดอันดับโรงเรียนด้านความยั่งยืน  
+โดยอ้างอิงแนวคิดจากมาตรฐานสากลด้านสิ่งแวดล้อมและการพัฒนาที่ยั่งยืน  
+เช่น LEED และ AASHE และปรับให้เหมาะสมกับบริบทการศึกษา
+
+ระบบมุ่งเน้นการประเมินใน 4 มิติหลัก ได้แก่ สิ่งแวดล้อม สังคม การบริหารจัดการ และเศรษฐกิจ  
+ผลลัพธ์จะแสดงในรูปแบบคะแนนรวม อันดับ และกราฟ Radar เพื่อสะท้อนจุดแข็งของแต่ละโรงเรียน
+
+---
+
+## Technology Stack
 
 - Next.js 15 (App Router)
-- TypeScript strict mode
+- TypeScript (Strict Mode)
 - Tailwind CSS
-- Responsive Design (Mobile, Tablet, Desktop)
-- Mock Data (ไม่ต้องเชื่อม backend)
+- Responsive Design (Mobile / Tablet / Desktop)
+- Mock Data (Client-side only)
+- Recharts (Radar Chart)
+- No Authentication System
+
+---
+
+## Pages
+
+1. Home  
+   แสดงบทนำ แนวคิดของ Green School Index และความสำคัญของโรงเรียนสีเขียว
+
+2. Evaluation Criteria  
+   แสดงเกณฑ์การประเมินทั้งหมด พร้อมโครงสร้างคะแนนและการอ้างอิงมาตรฐาน
+
+3. Evaluation Form  
+   ฟอร์มสำหรับกรอกข้อมูลโรงเรียนและให้คะแนนตามเกณฑ์  
+   มีการตรวจสอบข้อมูลก่อนคำนวณผล
+
+4. Summary & Ranking  
+   สรุปผลคะแนนรวม  
+   แสดง Radar Chart 4 มิติ  
+   แสดงตารางจัดอันดับโรงเรียนทั้งหมด
+
+---
+
+## Core Features
+
+- School Evaluation Form
+- Weighted Score Calculation
+- Radar Chart Visualization (4 Dimensions)
+- School Ranking System
+- Responsive UI พร้อม Hamburger Navigation
 - Client-side Validation
-- Radar Chart (recharts)
-- Score Ranking
+- Mock Data (ไม่เชื่อมต่อ Backend)
 
-## หน้าที่มี
+---
 
-1. **Home (/)** - แนะนำเกี่ยวกับ GSI
-2. **Criteria (/criteria)** - เกณฑ์การประเมิน 6 ด้าน
-3. **Evaluate (/evaluate)** - ฟอร์มประเมินโรงเรียน
-4. **Summary (/summary)** - สรุปผลและจัดอันดับ
+## Evaluation Structure
 
-## การติดตั้ง
+### หมวดคะแนนหลัก (รวม 145 คะแนน)
 
-```bash
-# ติดตั้ง dependencies
-npm install
+- Site, Transportation & Infrastructure (STI) – 28
+- Water & Material Resources (WMR) – 34
+- Energy, Carbon & Climate (ECC) – 30
+- Health, Wellbeing & Quality of Life (HWQ) – 12
+- Governance, Planning & Management (GPM) – 6
+- Innovation & Local Priorities (ILP) – 10
+- Education, Research & Engagement (ERE) – 25
 
-# รันโหมด development
-npm run dev
+---
 
-# เปิดเว็บบราวเซอร์ที่
-http://localhost:3000
-```
+## Radar Chart Calculation
 
-## โครงสร้างโปรเจค
+1. แปลงคะแนนแต่ละหมวดเป็นเปอร์เซ็นต์  
+   (คะแนนที่ได้ ÷ คะแนนเต็ม) × 100
 
-```
-gsi-frontend/
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx          # Root layout
-│   │   ├── globals.css         # Global styles
-│   │   ├── page.tsx            # Home page
-│   │   ├── criteria/
-│   │   │   └── page.tsx        # Criteria page
-│   │   ├── evaluate/
-│   │   │   └── page.tsx        # Evaluation form
-│   │   └── summary/
-│   │       └── page.tsx        # Summary page
-│   ├── components/
-│   │   ├── Navbar.tsx          # Navigation bar
-│   │   ├── RadarChart.tsx      # Radar chart component
-│   │   └── ScoreTable.tsx      # Score ranking table
-│   ├── types/
-│   │   └── index.ts            # TypeScript types
-│   └── mocks/
-│       └── data.ts             # Mock data & functions
-├── tailwind.config.ts
-├── tsconfig.json
-├── next.config.ts
-└── package.json
-```
+2. รวมเป็น 4 มิติ
 
-## เกณฑ์การประเมิน
+- สิ่งแวดล้อม  
+  (STI% + WMR% + ECC%) ÷ 3
 
-1. **Energy Efficiency** (20%) - การใช้พลังงานอย่างมีประสิทธิภาพ
-2. **Waste Management** (18%) - การจัดการขยะและรีไซเคิล
-3. **Water Conservation** (15%) - การอนุรักษ์น้ำ
-4. **Green Curriculum** (17%) - หลักสูตรสิ่งแวดล้อม
-5. **Green Building** (15%) - อาคารเป็นมิตรต่อสิ่งแวดล้อม
-6. **Community Engagement** (15%) - การมีส่วนร่วมของชุมชน
+- สังคม  
+  (HWQ% + ERE%) ÷ 2
 
-## 🎨 สี Theme
+- การบริหารจัดการ  
+  (GPM% + ILP%) ÷ 2
 
-- Primary: `#007a6d` (เขียวเข้ม)
-- Secondary: `#039a8a` (เขียวอมฟ้า)
+- เศรษฐกิจ  
+  (ECC2% + ECC3% + WMR2% + WMR5% + ILP1%) ÷ 5
 
-## 📝 TypeScript Features
+3. แสดงผลใน Radar Chart 4 แกน
 
-- ใช้ strict mode
-- ไม่มี `any` type
-- Type safety ทุก component
-- Interface สำหรับทุก data structure
+---
 
-## 🔧 Scripts
+## Evaluation Dimensions
 
-```bash
-npm run dev      # Development mode
-npm run build    # Production build
-npm run start    # Production server
-npm run lint     # ESLint check
-```
+### สิ่งแวดล้อม (35%)
+- การใช้พื้นที่และโครงสร้างพื้นฐาน
+- การจัดการน้ำและทรัพยากร
+- พลังงาน คาร์บอน และการเปลี่ยนแปลงสภาพภูมิอากาศ
 
-## 📦 Dependencies
+### สังคม (32%)
+- สุขภาพ คุณภาพชีวิต และสภาพแวดล้อม
+- การศึกษา งานวิจัย และการมีส่วนร่วม
 
-- **next**: ^15.1.6
-- **react**: ^19.0.0
-- **react-dom**: ^19.0.0
-- **recharts**: ^2.15.0
-- **tailwindcss**: ^3.4.17
-- **typescript**: ^5
+### การบริหารจัดการ (24%)
+- โครงสร้างการบริหารและการวางแผน
+- นวัตกรรมและบริบทพื้นที่
 
-## ⚡ Performance
+### เศรษฐกิจ (9%)
+- ประสิทธิภาพพลังงานและการลงทุนระยะยาว
+- การใช้ทรัพยากรอย่างคุ้มค่าและสร้างมูลค่าเพิ่ม
 
-- Server-side rendering (SSR)
-- Static optimization
-- Code splitting
-- Image optimization
+---
 
-## 📱 Responsive Design
+## UI Theme
 
-- Mobile-first approach
-- Hamburger menu บนมือถือ
-- Optimized สำหรับ iPad และ Desktop
+- Primary Color: #007a6d
+- Secondary Color: #039a8a
+- Design Style: Clean, Modern, Sustainability-focused
 
-## 🎯 Features
+---
 
-### Form Validation
-- Real-time validation
-- Error messages
-- Required field indicators
+## Project Scope
 
-### Score Calculation
-- Weighted scoring system
-- Real-time calculation
-- Visual feedback
+- Frontend-focused implementation
+- ใช้ Mock Data เพื่อแสดงแนวคิดระบบ
+- ไม่มีระบบ Login หรือ Authentication
+- ออกแบบเพื่อรองรับการพัฒนาต่อเป็นระบบ Backend ในอนาคต
 
-### Data Visualization
-- Radar chart
-- Score ranking table
-- Color-coded performance levels
+---
 
-## 🌟 Design Highlights
+## Todo
 
-- Custom fonts (Poppins + Merriweather)
-- Gradient effects
-- Smooth animations
-- Modern UI/UX
-- Sustainability theme
-
-## 📄 License
-
-Private Project - Green School Index
+- เพิ่มตารางเปรียบเทียบเกณฑ์ในหน้า Evaluation Criteria
+- แสดงความเชื่อมโยงระหว่าง LEED, AASHE และ GSI
+- แสดงระดับการรับรองตามช่วงคะแนน
