@@ -4,7 +4,7 @@ services:
     container_name: gis_database
     environment:
       POSTGRES_DB: gis_db
-      POSTGRES_USER: admin_gis@Wx20x1
+      POSTGRES_USER: admin_gisWx20x1
       POSTGRES_PASSWORD: admin_gis@upser29df36789ijhb
     ports:
       - "5432:5432"
