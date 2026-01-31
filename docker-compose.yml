@@ -11,14 +11,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
 
-  web:
-    build: .
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-    depends_on:
-      - db
+  # web:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - db
 
 volumes:
   postgres_data:
