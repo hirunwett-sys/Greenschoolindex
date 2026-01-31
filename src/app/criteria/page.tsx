@@ -438,7 +438,7 @@ export default function CriteriaPage(): JSX.Element {
                     <td className="py-4 px-4 text-sm text-gray-900">รวมคะแนน</td>
                     <td className="py-4 px-4 text-sm text-center text-gray-900">110</td>
                     <td className="py-4 px-4 text-sm text-center text-gray-900">175</td>
-                    <td className="py-4 px-4 text-sm text-center text-primary text-lg">145</td>
+                    <td className="py-4 px-4 text-sm text-center text-primary">145</td>
                   </tr>
                 </tbody>
               </table>
@@ -477,9 +477,9 @@ export default function CriteriaPage(): JSX.Element {
                         GOLD
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">60–79 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">65–84 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">102–115 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">60-79 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">65-84 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">102-115 คะแนน</td>
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4">
@@ -487,9 +487,9 @@ export default function CriteriaPage(): JSX.Element {
                         SILVER
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">50–59 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">45–64 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">87–101 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">50-59 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">45-64 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">87-101 คะแนน</td>
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4">
@@ -497,9 +497,9 @@ export default function CriteriaPage(): JSX.Element {
                         ผ่าน / BRONZE
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">40–49 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">25–44 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">58–86 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">40-49 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">25-44 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">58-86 คะแนน</td>
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4">
@@ -507,9 +507,9 @@ export default function CriteriaPage(): JSX.Element {
                         ไม่ผ่าน
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">0–39 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center text-gray-700">0–24 คะแนน</td>
-                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">0–57 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">0-39 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center text-gray-700">0-24 คะแนน</td>
+                    <td className="py-3 px-4 text-sm text-center font-semibold text-primary">0-57 คะแนน</td>
                   </tr>
                 </tbody>
               </table>

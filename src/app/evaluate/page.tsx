@@ -117,6 +117,12 @@ const scoringGuide = [
   { score: 7, label: 'ยอดเยี่ยม', desc: 'มีนวัตกรรม เป็นต้นแบบได้' }
 ];
 
+const coverageOptions = {
+  whole: 'ทั้งโรงเรียน',
+  building: 'เฉพาะอาคารเรียน',
+  full: 'รวมโรงอาหาร / หอพัก / สนามกีฬา'
+};
+
 interface FormData {
   schoolName: string;
   coverage: string;
@@ -176,15 +182,22 @@ export default function EvaluatePage(): JSX.Element {
       newErrors.schoolName = 'กรุณากรอกชื่อโรงเรียน';
     }
 
+    if (!formData.coverage) {
+      newErrors.coverage = 'กรุณาเลือกขอบเขตการประเมิน';
+    }
+
     if (!formData.area.trim()) {
       newErrors.area = 'กรุณากรอกพื้นที่ใช้สอย';
+    } else if (Number(formData.area) <= 0) {
+      newErrors.area = 'พื้นที่ต้องมากกว่า 0';
     }
 
     if (!formData.staff.trim()) {
       newErrors.staff = 'กรุณากรอกจำนวนบุคลากร';
+    } else if (Number(formData.staff) <= 0) {
+      newErrors.staff = 'จำนวนบุคลากรต้องมากกว่า 0';
     }
 
-    // Check all sub-criteria scores
     gsiCriteria.forEach((criterion) => {
       criterion.subCriteria.forEach((sub) => {
         if (!formData.scores[sub.id]) {
@@ -219,6 +232,8 @@ export default function EvaluatePage(): JSX.Element {
 
     const totalScore = calculateTotalScore();
 
+    const coverageThai = formData.coverage ? coverageOptions[formData.coverage as keyof typeof coverageOptions] : '';
+
     try {
       const response = await fetch('/api/evaluations', {
         method: 'POST',
@@ -227,7 +242,7 @@ export default function EvaluatePage(): JSX.Element {
         },
         body: JSON.stringify({
           schoolName: formData.schoolName,
-          coverage: formData.coverage,
+          coverage: coverageThai, 
           area: formData.area,
           staff: formData.staff,
           scores: formData.scores,
@@ -242,10 +257,8 @@ export default function EvaluatePage(): JSX.Element {
 
       const result = await response.json();
 
-      // Store result ID in sessionStorage for highlighting in summary page
       sessionStorage.setItem('newEvaluationId', result.id);
 
-      // Navigate to summary page
       router.push('/summary');
     } catch (error) {
       console.error('Error submitting evaluation:', error);
@@ -274,7 +287,7 @@ export default function EvaluatePage(): JSX.Element {
               <div className="flex items-center space-x-2">
                 <Info className="w-6 h-6 text-primary" />
                 <h3 className="font-display text-xl font-bold text-primary">
-                  หมายเหตุการให้คะแนน (1–7)
+                  หมายเหตุการให้คะแนน (1-7)
                 </h3>
               </div>
             </div>
@@ -327,18 +340,23 @@ export default function EvaluatePage(): JSX.Element {
 
               <div>
                 <label className="block font-body text-sm font-medium text-gray-700 mb-2">
-                  โรงเรียนที่ประเมินครอบคลุม
+                  โรงเรียนที่ประเมินครอบคลุม <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.coverage}
                   onChange={(e) => handleInputChange('coverage', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-primary/50 hover:border-primary/50 transition-colors"
+                  className={`w-full px-4 py-3 border-2 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors ${
+                    errors.coverage ? 'border-red-500' : 'border-gray-300 hover:border-primary/50'
+                  }`}
                 >
                   <option value="">เลือกขอบเขตการประเมิน</option>
                   <option value="whole">ทั้งโรงเรียน</option>
                   <option value="building">เฉพาะอาคารเรียน</option>
                   <option value="full">รวมโรงอาหาร / หอพัก / สนามกีฬา</option>
                 </select>
+                {errors.coverage && (
+                  <p className="mt-2 text-sm text-red-500 font-body">{errors.coverage}</p>
+                )}
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
@@ -348,6 +366,8 @@ export default function EvaluatePage(): JSX.Element {
                   </label>
                   <input
                     type="number"
+                    min="1"
+                    step="0.01"
                     value={formData.area}
                     onChange={(e) => handleInputChange('area', e.target.value)}
                     className={`w-full px-4 py-3 border-2 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors ${
@@ -366,6 +386,8 @@ export default function EvaluatePage(): JSX.Element {
                   </label>
                   <input
                     type="number"
+                    min="1"
+                    step="1"
                     value={formData.staff}
                     onChange={(e) => handleInputChange('staff', e.target.value)}
                     className={`w-full px-4 py-3 border-2 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors ${

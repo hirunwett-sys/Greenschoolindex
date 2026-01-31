@@ -28,13 +28,13 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Filter,
   SortAsc,
   SortDesc,
-  Eye,
   TrendingDown,
   Activity,
-  CardSim
+  CardSim,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import {
   Radar,
@@ -44,14 +44,6 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
   Tooltip,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Legend as RechartsLegend,
-  BarChart as RechartsBarChart,
-  Bar
 } from 'recharts';
 
 const gsiCriteria = [
@@ -193,7 +185,12 @@ interface CategoryScore {
   percentage: number;
 }
 
-// Custom Tooltip Component
+interface Toast {
+  id: number;
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
+
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -266,6 +263,64 @@ const DeleteModal = ({ isOpen, schoolName, onConfirm, onCancel, isDeleting }: De
     </div>
   );
 };
+interface ToastComponentProps {
+  toast: Toast;
+  onClose: (id: number) => void;
+}
+
+const ToastComponent = ({ toast, onClose }: ToastComponentProps) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose(toast.id);
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [toast.id, onClose]);
+
+  const icons = {
+    success: <CheckCircle className="w-5 h-5 text-green-500" />,
+    error: <AlertCircle className="w-5 h-5 text-red-500" />,
+    info: <AlertCircle className="w-5 h-5 text-blue-500" />
+  };
+
+  const bgColors = {
+    success: 'bg-green-50 border-green-200',
+    error: 'bg-red-50 border-red-200',
+    info: 'bg-blue-50 border-blue-200'
+  };
+
+  return (
+    <div className={`${bgColors[toast.type]} border-2 rounded-xl p-4 shadow-lg animate-slide-in-right flex items-start gap-3 min-w-[320px] max-w-md`}>
+      <div className="flex-shrink-0 mt-0.5">
+        {icons[toast.type]}
+      </div>
+      <div className="flex-1">
+        <p className="font-body text-sm text-gray-900">{toast.message}</p>
+      </div>
+      <button
+        onClick={() => onClose(toast.id)}
+        className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
+
+interface ToastContainerProps {
+  toasts: Toast[];
+  onClose: (id: number) => void;
+}
+
+const ToastContainer = ({ toasts, onClose }: ToastContainerProps) => {
+  return (
+    <div className="fixed top-4 right-4 z-[100] space-y-2">
+      {toasts.map((toast) => (
+        <ToastComponent key={toast.id} toast={toast} onClose={onClose} />
+      ))}
+    </div>
+  );
+};
 
 const ITEMS_PER_PAGE = 10;
 
@@ -283,11 +338,25 @@ export default function SummaryPage(): JSX.Element | null {
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
   const [schoolToDelete, setSchoolToDelete] = useState<EvaluationData | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
   
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterRating, setFilterRating] = useState<string>('all');
+
+  const addToast = (type: 'success' | 'error' | 'info', message: string) => {
+    const newToast: Toast = {
+      id: Date.now(),
+      type,
+      message
+    };
+    setToasts(prev => [...prev, newToast]);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   useEffect(() => {
     const newId = sessionStorage.getItem('newEvaluationId');
@@ -321,7 +390,7 @@ export default function SummaryPage(): JSX.Element | null {
     });
 
     setFilteredEvaluations(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   }, [evaluations, searchQuery, filterRating, sortOrder]);
 
   const loadEvaluations = async () => {
@@ -347,7 +416,7 @@ export default function SummaryPage(): JSX.Element | null {
       }
     } catch (error) {
       console.error('Error loading evaluations:', error);
-      alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      addToast('error', 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setIsLoading(false);
     }
@@ -379,7 +448,6 @@ export default function SummaryPage(): JSX.Element | null {
     const ilpScore = (scores.ilp1 || 0) + (scores.ilp2 || 0);
     const ilpPercent = (ilpScore / 10) * 100;
     
-    // Store category scores
     setCategoryScores([
       { name: 'พื้นที่และการเดินทาง', score: stiScore, maxScore: 28, percentage: stiPercent },
       { name: 'น้ำและทรัพยากร', score: wmrScore, maxScore: 34, percentage: wmrPercent },
@@ -441,13 +509,15 @@ export default function SummaryPage(): JSX.Element | null {
         throw new Error('Failed to delete evaluation');
       }
 
+      addToast('success', `ลบการประเมินของ "${schoolToDelete.schoolName}" เรียบร้อยแล้ว`);
+      
       await loadEvaluations();
       
       setDeleteModalOpen(false);
       setSchoolToDelete(null);
     } catch (error) {
       console.error('Error deleting evaluation:', error);
-      alert('เกิดข้อผิดพลาดในการลบข้อมูล');
+      addToast('error', 'เกิดข้อผิดพลาดในการลบข้อมูล กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsDeleting(false);
     }
@@ -506,6 +576,8 @@ ${criterion.subCriteria.map(sub =>
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    addToast('success', 'ดาวน์โหลดรายงานสำเร็จ');
   };
 
   const totalPages = Math.ceil(filteredEvaluations.length / ITEMS_PER_PAGE);
@@ -564,6 +636,8 @@ ${criterion.subCriteria.map(sub =>
 
   return (
     <>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 shadow-sm">
@@ -1152,12 +1226,27 @@ ${criterion.subCriteria.map(sub =>
           }
         }
 
+        @keyframes slide-in-right {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
         .animate-fade-in {
           animation: fade-in 0.3s ease-out;
         }
 
         .animate-scale-in {
           animation: scale-in 0.3s ease-out;
+        }
+
+        .animate-slide-in-right {
+          animation: slide-in-right 0.3s ease-out;
         }
 
         .custom-scrollbar::-webkit-scrollbar {

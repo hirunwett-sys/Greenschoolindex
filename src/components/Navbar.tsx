@@ -16,7 +16,6 @@ export default function Navbar(): JSX.Element {
     setIsOpen(false);
   };
 
-  // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';

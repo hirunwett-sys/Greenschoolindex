@@ -74,8 +74,6 @@ export async function POST(
     ): Promise<NextResponse<EvaluationResponse | ErrorResponse>> {
     try {
         const body: CreateEvaluationRequest = await request.json();
-
-        // Validation
         if (!body.schoolName || !body.area || !body.staff || !body.scores) {
         return NextResponse.json(
             { error: "Missing required fields" },
