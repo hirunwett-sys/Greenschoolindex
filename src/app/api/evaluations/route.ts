@@ -1,4 +1,3 @@
-// src/app/api/evaluations/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { EvaluationResponse, CreateEvaluationRequest, ErrorResponse } from "@/lib/types";
