@@ -3,7 +3,8 @@ import { Bai_Jamjuree } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import type { ReactNode, JSX } from 'react';
-import { MapPin, Phone, Mail, Facebook, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Facebook, MessageCircle, Link } from 'lucide-react';
+import { Line } from 'recharts';
 
 const baiJamjuree = Bai_Jamjuree({
   subsets: ['latin', 'thai'],
@@ -51,19 +52,27 @@ export default function RootLayout({
                 
                 <div className="flex items-center space-x-1.5">
                   <Phone className="w-4 h-4" />
-                  <span>034-109686 ต่อ 209000</span>
+                  <span>0628319332</span>
+                  <span>0948573591</span>
+                </div>
+                
+                <div className="flex items-center space-x-1.5">
+                  <Link className="w-4 h-4" />
+                  <a href="https://forms.gle/knUXqoFhE3UVz22G7" className="hover:underline">
+                    ทำแบบประเมินความพึงพอใจ
+                  </a>
                 </div>
                 
                 <div className="flex items-center space-x-1.5">
                   <Mail className="w-4 h-4" />
-                  <a href="mailto:fac-en@silpakorn.edu" className="hover:underline">
-                    fac-en@silpakorn.edu
+                  <a href="mailto:hirunwett@gmail.com" className="hover:underline">
+                    hirunwett@gmail.com
                   </a>
                 </div>
 
                 <div className="flex items-center space-x-3">
                   <a
-                    href="https://facebook.com/entechsu"
+                    href="https://web.facebook.com/coffinchopma/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
@@ -72,7 +81,7 @@ export default function RootLayout({
                     <Facebook className="w-4 h-4" />
                   </a>
                   <a
-                    href="https://line.me/R/ti/p/@entech-su"
+                    href="https://line.me/ti/p/6PbjPvNa7T"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
