@@ -11,7 +11,11 @@ import {
   Settings,
   Lightbulb,
   BookOpen,
-  Info
+  Info,
+  Upload,
+  X,
+  FileText,
+  CheckCircle
 } from 'lucide-react';
 
 const gsiCriteria = [
@@ -108,7 +112,8 @@ const gsiCriteria = [
 ];
 
 const scoringGuide = [
-  { score: 1, label: 'ยังไม่ดำเนินการ', desc: 'มีเฉพาะแนวคิด / ทำแบบชั่วคราว' },
+  { score: 0, label: 'ไม่มีข้อมูล', desc: 'ไม่ได้ดำเนินการ' },
+  { score: 1, label: 'ทำแบบชั่วคราว', desc: 'มีเฉพาะแนวคิด / ทำแบบชั่วคราว' },
   { score: 2, label: 'เริ่มดำเนินการ', desc: 'มีบ้าง แต่ไม่ต่อเนื่อง / บางพื้นที่' },
   { score: 3, label: 'ดำเนินการสม่ำเสมอ', desc: 'ครอบคลุมระดับหนึ่ง แต่ไม่ครบ' },
   { score: 4, label: 'เป็นระบบ', desc: 'ครบทุกด้าน มีหลักฐาน มีติดตาม' },
@@ -131,6 +136,13 @@ interface FormData {
   scores: Record<string, number>;
 }
 
+interface EvidenceFile {
+  file: File;
+  fileName: string;
+  fileSize: number;
+  base64Data?: string;
+}
+
 export default function EvaluatePage(): JSX.Element {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
@@ -143,6 +155,8 @@ export default function EvaluatePage(): JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showGuide, setShowGuide] = useState<boolean>(true);
+  const [evidenceFile, setEvidenceFile] = useState<EvidenceFile | null>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState<boolean>(false);
 
   const handleInputChange = (field: string, value: string): void => {
     setFormData((prev) => ({
@@ -175,6 +189,78 @@ export default function EvaluatePage(): JSX.Element {
     }
   };
 
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        // Remove the data:application/pdf;base64, prefix
+        const base64Data = base64String.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      alert('กรุณาเลือกไฟล์ PDF เท่านั้น');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert('ขนาดไฟล์ต้องไม่เกิน 10MB');
+      e.target.value = '';
+      return;
+    }
+
+    setIsProcessingFile(true);
+    try {
+      const base64Data = await convertFileToBase64(file);
+      
+      setEvidenceFile({
+        file,
+        fileName: file.name,
+        fileSize: file.size,
+        base64Data,
+      });
+
+      if (errors.evidenceFile) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.evidenceFile;
+          return newErrors;
+        });
+      }
+    } catch (error) {
+      console.error('Error converting file to base64:', error);
+      alert('เกิดข้อผิดพลาดในการประมวลผลไฟล์');
+      e.target.value = '';
+    } finally {
+      setIsProcessingFile(false);
+    }
+  };
+
+  const handleRemoveFile = (): void => {
+    setEvidenceFile(null);
+    const fileInput = document.getElementById('evidence-file') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -200,7 +286,7 @@ export default function EvaluatePage(): JSX.Element {
 
     gsiCriteria.forEach((criterion) => {
       criterion.subCriteria.forEach((sub) => {
-        if (!formData.scores[sub.id]) {
+        if (formData.scores[sub.id] === undefined || formData.scores[sub.id] === null) {
           newErrors[sub.id] = 'กรุณาให้คะแนน';
         }
       });
@@ -230,11 +316,10 @@ export default function EvaluatePage(): JSX.Element {
 
     setIsSubmitting(true);
 
-    const totalScore = calculateTotalScore();
-
-    const coverageThai = formData.coverage ? coverageOptions[formData.coverage as keyof typeof coverageOptions] : '';
-
     try {
+      const totalScore = calculateTotalScore();
+      const coverageThai = formData.coverage ? coverageOptions[formData.coverage as keyof typeof coverageOptions] : '';
+
       const response = await fetch('/api/evaluations', {
         method: 'POST',
         headers: {
@@ -247,6 +332,11 @@ export default function EvaluatePage(): JSX.Element {
           staff: formData.staff,
           scores: formData.scores,
           totalScore,
+          evidence: evidenceFile?.base64Data ? {
+            fileName: evidenceFile.fileName,
+            fileData: evidenceFile.base64Data,
+            fileSize: evidenceFile.fileSize,
+          } : null,
         }),
       });
 
@@ -287,7 +377,7 @@ export default function EvaluatePage(): JSX.Element {
               <div className="flex items-center space-x-2">
                 <Info className="w-6 h-6 text-primary" />
                 <h3 className="font-display text-xl font-bold text-primary">
-                  หมายเหตุการให้คะแนน (1-7)
+                  หมายเหตุการให้คะแนน (0-7)
                 </h3>
               </div>
             </div>
@@ -432,7 +522,7 @@ export default function EvaluatePage(): JSX.Element {
                       </h3>
                       
                       <div className="flex flex-wrap gap-2">
-                        {Array.from({ length: sub.maxScore }, (_, i) => i + 1).map((score) => (
+                        {Array.from({ length: sub.maxScore + 1 }, (_, i) => i).map((score) => (
                           <button
                             key={score}
                             type="button"
@@ -457,16 +547,95 @@ export default function EvaluatePage(): JSX.Element {
             );
           })}
 
+          {/* Evidence Upload Section */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 border-2 border-primary/10 animate-slide-up">
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Upload className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="font-display text-xl md:text-2xl font-semibold text-gray-900">
+                  8. หลักฐานประกอบ
+                </h2>
+                <p className="font-body text-sm text-gray-500">อัพโหลดเอกสารหลักฐาน (ไม่บังคับ)</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {!evidenceFile ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary/50 transition-colors">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="font-body text-gray-600 mb-2">
+                    คลิกเพื่ออัพโหลดไฟล์ PDF
+                  </p>
+                  <p className="font-body text-sm text-gray-500 mb-4">
+                    ขนาดไฟล์ไม่เกิน 10MB • ไฟล์จะถูกเก็บในฐานข้อมูล
+                  </p>
+                  <label className="inline-block">
+                    <input
+                      id="evidence-file"
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      disabled={isProcessingFile}
+                    />
+                    <span className={`cursor-pointer inline-flex items-center bg-gradient-to-r from-primary to-secondary text-white font-display font-semibold px-6 py-3 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 ${
+                      isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}>
+                      <Upload className="w-5 h-5 mr-2" />
+                      {isProcessingFile ? 'กำลังประมวลผล...' : 'เลือกไฟล์'}
+                    </span>
+                  </label>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-body font-semibold text-gray-900 truncate">
+                            {evidenceFile.fileName}
+                          </h4>
+                          <p className="font-body text-sm text-gray-600">
+                            {formatFileSize(evidenceFile.fileSize)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveFile}
+                          className="flex-shrink-0 p-1 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                          title="ลบไฟล์"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="font-body text-sm font-medium">ไฟล์พร้อมบันทึกในฐานข้อมูล</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Submit Button */}
           <div className="flex justify-center animate-scale-in">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isProcessingFile}
               className={`bg-gradient-to-r from-primary to-secondary text-white font-display font-semibold px-12 py-4 rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300 ${
-                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                (isSubmitting || isProcessingFile) ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
-              {isSubmitting ? 'กำลังประมวลผล...' : 'ส่งการประเมิน'}
+              {isSubmitting 
+                ? 'กำลังประมวลผล...' 
+                : 'ส่งการประเมิน'}
             </button>
           </div>
         </form>

@@ -1,4 +1,16 @@
-export interface ScoreData {
+export interface EvaluationResponse {
+    id: string;
+    schoolName: string;
+    coverage: string | null;
+    area: string;
+    staff: string;
+    totalScore: number;
+    submittedAt: string;
+    scores: ScoresData;
+    evidence?: EvidenceData | null;
+}
+
+export interface ScoresData {
     sti1: number;
     sti2: number;
     sti3: number;
@@ -28,24 +40,27 @@ export interface ScoreData {
     ere5: number;
 }
 
+export interface EvidenceData {
+    id: string;
+    fileName: string;
+    fileData: string;
+    fileSize: number;
+    mimeType: string;
+    createdAt: string;
+}
+
 export interface CreateEvaluationRequest {
     schoolName: string;
     coverage?: string;
     area: string;
     staff: string;
-    scores: ScoreData;
+    scores: ScoresData;
     totalScore: number;
-}
-
-export interface EvaluationResponse {
-    id: string;
-    schoolName: string;
-    coverage: string | null;
-    area: string;
-    staff: string;
-    totalScore: number;
-    submittedAt: string;
-    scores: ScoreData;
+    evidence?: {
+        fileName: string;
+        fileData: string; 
+        fileSize: number;
+    } | null;
 }
 
 export interface ErrorResponse {

@@ -34,7 +34,9 @@ import {
   Activity,
   CardSim,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import {
   Radar,
@@ -161,6 +163,17 @@ const getRankIcon = (rank: number) => {
   return <span className="text-sm font-semibold text-gray-600">#{rank}</span>;
 };
 
+
+interface EvidenceData {
+  id: string;
+  fileName: string;
+  fileData: string; 
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+}
+
+
 interface EvaluationData {
   id: string;
   schoolName: string;
@@ -170,6 +183,7 @@ interface EvaluationData {
   scores: Record<string, number>;
   totalScore: number;
   submittedAt: string;
+  evidence?: EvidenceData | null; 
 }
 
 interface RadarData {
@@ -190,6 +204,105 @@ interface Toast {
   type: 'success' | 'error' | 'info';
   message: string;
 }
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+};
+
+const base64ToBlob = (base64: string, mimeType: string): Blob => {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: mimeType });
+};
+
+const createBlobUrl = (base64: string, mimeType: string): string => {
+  const blob = base64ToBlob(base64, mimeType);
+  return URL.createObjectURL(blob);
+};
+
+const EvidenceSection = ({ evidence }: { evidence: EvidenceData }) => {
+  const handleDownload = () => {
+    try {
+      const blob = base64ToBlob(evidence.fileData, evidence.mimeType);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = evidence.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์');
+    }
+  };
+
+  const handlePreview = () => {
+    try {
+      const blobUrl = createBlobUrl(evidence.fileData, evidence.mimeType);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000); 
+    } catch (error) {
+      console.error('Error opening file:', error);
+      alert('เกิดข้อผิดพลาดในการเปิดไฟล์');
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+      <h3 className="font-display text-xl font-semibold text-gray-900 mb-4 flex items-center">
+        <FileText className="w-5 h-5 text-primary mr-2" />
+        หลักฐานประกอบ
+      </h3>
+
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-16 h-16 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <FileText className="w-8 h-8 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-body font-semibold text-gray-900 mb-1 truncate">
+              {evidence.fileName}
+            </h4>
+            <div className="flex items-center gap-4 text-sm text-gray-600 mb-1">
+              <span>{formatFileSize(evidence.fileSize)}</span>
+              <span>•</span>
+              <span>{new Date(evidence.createdAt).toLocaleDateString('th-TH')}</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-4">
+              เก็บในฐานข้อมูล
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handlePreview}
+                className="flex-1 inline-flex items-center justify-center bg-white border-2 border-blue-500 text-blue-600 font-display font-semibold px-4 py-2.5 rounded-lg hover:bg-blue-50 transition-all duration-300"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                ดูตัวอย่าง
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex-1 inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-display font-semibold px-4 py-2.5 rounded-lg hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                ดาวน์โหลด
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -214,6 +327,7 @@ interface DeleteModalProps {
   onCancel: () => void;
   isDeleting: boolean;
 }
+
 
 const DeleteModal = ({ isOpen, schoolName, onConfirm, onCancel, isDeleting }: DeleteModalProps) => {
   if (!isOpen) return null;
@@ -639,7 +753,6 @@ ${criterion.subCriteria.map(sub =>
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Header */}
         <div className="bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-[1800px] mx-auto px-6 py-6">
             <div className="flex items-center justify-between">
@@ -714,11 +827,8 @@ ${criterion.subCriteria.map(sub =>
             </div>
           </div>
 
-          {/* Main Content Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Left Column - School Rankings */}
             <div className="xl:col-span-1 space-y-4">
-              {/* Search and Filters */}
               <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                 <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -758,7 +868,6 @@ ${criterion.subCriteria.map(sub =>
                   </button>
                 </div>
 
-                {/* Rating Distribution */}
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <p className="text-xs text-gray-600 font-body mb-2">การกระจายระดับ</p>
                   <div className="space-y-1">
@@ -790,7 +899,6 @@ ${criterion.subCriteria.map(sub =>
                 </div>
               </div>
 
-              {/* Rankings List */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100">
                 <div className="p-4 border-b border-gray-100">
                   <h3 className="font-display text-lg font-semibold text-gray-900 flex items-center">
@@ -852,7 +960,6 @@ ${criterion.subCriteria.map(sub =>
                               </div>
                             </button>
 
-                            {/* Delete Button */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -870,7 +977,6 @@ ${criterion.subCriteria.map(sub =>
                   )}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="p-4 border-t border-gray-100">
                     <div className="flex items-center justify-between">
@@ -911,7 +1017,6 @@ ${criterion.subCriteria.map(sub =>
               </div>
             </div>
 
-            {/* Right Column - Selected School Details */}
             <div className="xl:col-span-2 space-y-4">
               {/* School Header */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -966,7 +1071,6 @@ ${criterion.subCriteria.map(sub =>
                   </div>
                 </div>
 
-                {/* Progress Bar */}
                 <div className="mt-4">
                   <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                     <div
@@ -977,7 +1081,6 @@ ${criterion.subCriteria.map(sub =>
                 </div>
               </div>
 
-              {/* Radar Chart and Dimension Scores */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h3 className="font-display text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <Target className="w-5 h-5 text-primary mr-2" />
@@ -985,7 +1088,6 @@ ${criterion.subCriteria.map(sub =>
                 </h3>
 
                 <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Radar Chart */}
                   <div>
                     <div className="h-80 bg-gradient-to-br from-gray-50/50 to-white rounded-xl p-4 border border-gray-100">
                       <ResponsiveContainer width="100%" height="100%">
@@ -1031,7 +1133,6 @@ ${criterion.subCriteria.map(sub =>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Legend */}
                     <div className="grid grid-cols-2 gap-2 mt-3">
                       {radarData.map((item, index) => {
                         const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
@@ -1048,7 +1149,6 @@ ${criterion.subCriteria.map(sub =>
                     </div>
                   </div>
 
-                  {/* Dimension Scores */}
                   <div className="space-y-3">
                     {radarData.map((data, index) => {
                       const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
@@ -1105,7 +1205,6 @@ ${criterion.subCriteria.map(sub =>
                 </div>
               </div>
 
-              {/* Analysis */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h3 className="font-display text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <TrendingUp className="w-5 h-5 text-primary mr-2" />
@@ -1149,7 +1248,6 @@ ${criterion.subCriteria.map(sub =>
                 </div>
               </div>
 
-              {/* Category Breakdown */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h3 className="font-display text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <BarChart3 className="w-5 h-5 text-primary mr-2" />
@@ -1178,25 +1276,27 @@ ${criterion.subCriteria.map(sub =>
                       </div>
                     </div>
                   ))}
+
+              <div className=' w-auto flex justify-center'>
+                  <button
+                    onClick={handleDownload}
+                    className="inline-flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white font-display font-semibold px-6 py-4 rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+                    >
+                    <Download className="w-5 h-5 mr-2" />
+                    ดาวน์โหลดรายงาน (.txt)
+                  </button>
+                </div>
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div>
-                <button
-                  onClick={handleDownload}
-                  className="w-full inline-flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white font-display font-semibold px-6 py-4 rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  ดาวน์โหลดรายงาน (.txt)
-                </button>
+              {selectedSchool.evidence && (
+                <EvidenceSection evidence={selectedSchool.evidence} />
+              )}
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Delete Confirmation Modal */}
       <DeleteModal
         isOpen={deleteModalOpen}
         schoolName={schoolToDelete?.schoolName || ''}
