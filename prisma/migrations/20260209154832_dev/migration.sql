@@ -50,8 +50,25 @@ CREATE TABLE "scores" (
     CONSTRAINT "scores_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "evidences" (
+    "id" TEXT NOT NULL,
+    "school_id" TEXT NOT NULL,
+    "file_name" TEXT NOT NULL,
+    "file_data" TEXT NOT NULL,
+    "file_size" INTEGER NOT NULL,
+    "mime_type" TEXT NOT NULL DEFAULT 'application/pdf',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "evidences_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "scores_school_id_key" ON "scores"("school_id");
 
 -- AddForeignKey
 ALTER TABLE "scores" ADD CONSTRAINT "scores_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "evidences" ADD CONSTRAINT "evidences_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;

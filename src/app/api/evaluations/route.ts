@@ -7,6 +7,7 @@ export async function GET(): Promise<NextResponse<EvaluationResponse[] | ErrorRe
         const evaluations = await prisma.school.findMany({
         include: {
             scores: true,
+            evidences: true,
         },
         orderBy: {
             totalScore: 'desc', 
@@ -15,6 +16,7 @@ export async function GET(): Promise<NextResponse<EvaluationResponse[] | ErrorRe
 
         const response: EvaluationResponse[] = evaluations.map((evaluation) => {
         const scoreData = evaluation.scores[0]; 
+        const evidenceData = evaluation.evidences[0];
         
         return {
             id: evaluation.id,
@@ -53,6 +55,14 @@ export async function GET(): Promise<NextResponse<EvaluationResponse[] | ErrorRe
             ere4: scoreData?.ere4 ?? 0,
             ere5: scoreData?.ere5 ?? 0,
             },
+            evidence: evidenceData ? {
+            id: evidenceData.id,
+            fileName: evidenceData.fileName,
+            fileData: evidenceData.fileData,
+            fileSize: evidenceData.fileSize,
+            mimeType: evidenceData.mimeType,
+            createdAt: evidenceData.createdAt.toISOString(),
+            } : null,
         };
         });
 
@@ -90,42 +100,51 @@ export async function POST(
             totalScore: body.totalScore,
             scores: {
             create: {
-                sti1: body.scores.sti1,
-                sti2: body.scores.sti2,
-                sti3: body.scores.sti3,
-                sti4: body.scores.sti4,
-                wmr1: body.scores.wmr1,
-                wmr2: body.scores.wmr2,
-                wmr3: body.scores.wmr3,
-                wmr4: body.scores.wmr4,
-                wmr5: body.scores.wmr5,
-                ecc1: body.scores.ecc1,
-                ecc2: body.scores.ecc2,
-                ecc3: body.scores.ecc3,
-                ecc4: body.scores.ecc4,
-                ecc5: body.scores.ecc5,
-                hwq1: body.scores.hwq1,
-                hwq2: body.scores.hwq2,
-                hwq3: body.scores.hwq3,
-                gpm1: body.scores.gpm1,
-                gpm2: body.scores.gpm2,
-                gpm3: body.scores.gpm3,
-                ilp1: body.scores.ilp1,
-                ilp2: body.scores.ilp2,
-                ere1: body.scores.ere1,
-                ere2: body.scores.ere2,
-                ere3: body.scores.ere3,
-                ere4: body.scores.ere4,
-                ere5: body.scores.ere5,
+                sti1: body.scores.sti1 ?? 0,
+                sti2: body.scores.sti2 ?? 0,
+                sti3: body.scores.sti3 ?? 0,
+                sti4: body.scores.sti4 ?? 0,
+                wmr1: body.scores.wmr1 ?? 0,
+                wmr2: body.scores.wmr2 ?? 0,
+                wmr3: body.scores.wmr3 ?? 0,
+                wmr4: body.scores.wmr4 ?? 0,
+                wmr5: body.scores.wmr5 ?? 0,
+                ecc1: body.scores.ecc1 ?? 0,
+                ecc2: body.scores.ecc2 ?? 0,
+                ecc3: body.scores.ecc3 ?? 0,
+                ecc4: body.scores.ecc4 ?? 0,
+                ecc5: body.scores.ecc5 ?? 0,
+                hwq1: body.scores.hwq1 ?? 0,
+                hwq2: body.scores.hwq2 ?? 0,
+                hwq3: body.scores.hwq3 ?? 0,
+                gpm1: body.scores.gpm1 ?? 0,
+                gpm2: body.scores.gpm2 ?? 0,
+                gpm3: body.scores.gpm3 ?? 0,
+                ilp1: body.scores.ilp1 ?? 0,
+                ilp2: body.scores.ilp2 ?? 0,
+                ere1: body.scores.ere1 ?? 0,
+                ere2: body.scores.ere2 ?? 0,
+                ere3: body.scores.ere3 ?? 0,
+                ere4: body.scores.ere4 ?? 0,
+                ere5: body.scores.ere5 ?? 0,
             },
             },
+            evidences: body.evidence ? {
+            create: {
+                fileName: body.evidence.fileName,
+                fileData: body.evidence.fileData,
+                fileSize: body.evidence.fileSize,
+            }
+            } : undefined,
         },
         include: {
             scores: true,
+            evidences: true,
         },
         });
 
         const scoreData = newEvaluation.scores[0];
+        const evidenceData = newEvaluation.evidences[0];
         
         const response: EvaluationResponse = {
         id: newEvaluation.id,
@@ -164,6 +183,14 @@ export async function POST(
             ere4: scoreData?.ere4 ?? 0,
             ere5: scoreData?.ere5 ?? 0,
         },
+        evidence: evidenceData ? {
+            id: evidenceData.id,
+            fileName: evidenceData.fileName,
+            fileData: evidenceData.fileData,
+            fileSize: evidenceData.fileSize,
+            mimeType: evidenceData.mimeType,
+            createdAt: evidenceData.createdAt.toISOString(),
+        } : null,
         };
 
         return NextResponse.json(response, { status: 201 });
