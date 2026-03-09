@@ -60,7 +60,7 @@ export default function Navbar(): JSX.Element {
             {/* Logo - Center on mobile, left on desktop */}
             <Link href="/" className="flex items-center space-x-2 group md:ml-0">
               <span className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                GSI
+                <img src="/images/Logo.png" alt=" GSI" />
               </span>
             </Link>
 

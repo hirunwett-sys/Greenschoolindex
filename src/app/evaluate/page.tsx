@@ -287,7 +287,7 @@ export default function EvaluatePage(): JSX.Element {
               <div className="flex items-center space-x-2">
                 <Info className="w-6 h-6 text-primary" />
                 <h3 className="font-display text-xl font-bold text-primary">
-                  หมายเหตุการให้คะแนน (1-7)
+                  หมายเหตุการให้คะแนน (0-7)
                 </h3>
               </div>
             </div>
