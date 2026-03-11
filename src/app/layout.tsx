@@ -38,14 +38,14 @@ export default function RootLayout({
               <div className="flex items-center gap-4">
           <div className="flex gap-2">
             <img src="/images/Logo.png" alt="GSI Logo TH" className="h-12 w-auto" />
-            <img src="/images/Logo_ENG.png" alt="GSI Logo EN" className="h-12 w-auto" />
+            <img src="/images/logo_ENG.png" alt="GSI Logo EN" className="h-12 w-auto" />
           </div>
           <div>
             <h3 className="font-display text-lg font-bold mb-1">
-              GSI : GREEN SCHOOL INDEX 
+              GSI : GREEN SCHOOL INDEX
             </h3>
             <p className="text-xs opacity-80">
-              ระบบประเมินและจัดอันดับโรงเรียนด้านความยั่งยืน
+              Building sustainable schools for a better future
             </p>
           </div>
               </div>
