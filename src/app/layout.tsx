@@ -42,10 +42,10 @@ export default function RootLayout({
           </div>
           <div>
             <h3 className="font-display text-lg font-bold mb-1">
-              GSI : GREEN SCHOOL INDEX
+              GSI : GREEN SCHOOL INDEX 
             </h3>
             <p className="text-xs opacity-80">
-              Building sustainable schools for a better future
+              ระบบประเมินและจัดอันดับโรงเรียนด้านความยั่งยืน
             </p>
           </div>
               </div>
