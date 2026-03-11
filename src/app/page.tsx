@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { JSX } from 'react';
-import { Sprout, BarChart3, Trophy, Globe, Lightbulb, GraduationCap, Users, Leaf, Recycle, BookOpen } from 'lucide-react';
+import { Sprout, Globe, Lightbulb, Users, Leaf, Recycle, BookOpen } from 'lucide-react';
 
 export default function HomePage(): JSX.Element {
   return (

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     FileText, Upload, CheckCircle, Clock, AlertCircle,
-    ExternalLink, Download, RefreshCw, Building, Calendar,
+    ExternalLink, RefreshCw, Building, Calendar,
     Award, X, Loader2, History, PenTool,
 } from 'lucide-react';
 
@@ -167,13 +167,6 @@ export default function MySubmissionsPage() {
         if (id) { setNewSubmissionId(id); sessionStorage.removeItem('newEvaluationId'); }
         fetchSubmissions();
     }, []);
-
-    const handleEvidenceSuccess = (id: string) => {
-        setOpenEvidence(null);
-        fetchSubmissions();
-        // keep the "just submitted" highlight if it applies
-        if (newSubmissionId === id) setNewSubmissionId(null);
-    };
 
     if (isLoading) {
         return (

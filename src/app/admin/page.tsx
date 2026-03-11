@@ -51,12 +51,6 @@ const getEvidenceStatus = (school: AdminSchool) => {
     return { label: 'รอผู้ดูแลตรวจสอบหลักฐาน', color: 'bg-yellow-100 text-yellow-700', icon: AlertCircle };
 };
 
-const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-};
-
 const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);

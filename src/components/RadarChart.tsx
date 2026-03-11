@@ -20,7 +20,8 @@ interface RadarChartComponentProps {
     }[];
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface TooltipPayload { value: number; payload: { dimension: string } }
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) => {
     if (active && payload && payload.length) {
         return (
         <div className="bg-white px-4 py-3 rounded-lg shadow-xl border-2 border-primary/20">
@@ -36,7 +37,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-const CustomLabel = ({ payload, x, y, textAnchor, stroke, radius }: any) => {
+const CustomLabel = ({ x, y, textAnchor, radius, payload }: { x: number; y: number; textAnchor: 'start' | 'middle' | 'end' | 'inherit'; radius: number; payload: { value: string } }) => {
     return (
         <g className="recharts-layer recharts-polar-angle-axis-tick">
         <text

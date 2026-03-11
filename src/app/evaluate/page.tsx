@@ -156,7 +156,7 @@ export default function EvaluatePage(): JSX.Element {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [showGuide, setShowGuide] = useState<boolean>(true);
+  const [showGuide] = useState<boolean>(true);
   const [evidenceFile, setEvidenceFile] = useState<EvidenceFile | null>(null);
   const [isProcessingFile, setIsProcessingFile] = useState<boolean>(false);
 
@@ -529,7 +529,7 @@ export default function EvaluatePage(): JSX.Element {
                 </div>
 
                 <div className="space-y-6">
-                  {criterion.subCriteria.map((sub, subIndex) => (
+                  {criterion.subCriteria.map((sub) => (
                     <div key={sub.id} className="border-t border-gray-200 pt-6 first:border-t-0 first:pt-0">
                       <h3 className="font-body text-base font-medium text-gray-900 mb-4">
                         {sub.id.toUpperCase()} - {sub.name}

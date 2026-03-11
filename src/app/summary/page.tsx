@@ -202,12 +202,6 @@ interface CategoryScore {
   percentage: number;
 }
 
-interface Toast {
-  id: number;
-  type: 'success' | 'error' | 'info';
-  message: string;
-}
-
 const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
@@ -307,7 +301,8 @@ const EvidenceSection = ({ evidence }: { evidence: EvidenceData }) => {
 };
 
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface TooltipPayload { value: number; payload: { dimension: string } }
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white px-4 py-3 rounded-lg shadow-xl border-2 border-primary/20">
@@ -1074,7 +1069,7 @@ ${criterion.subCriteria.map(sub =>
                             strokeWidth={3}
                             fill="url(#radarGradient)"
                             fillOpacity={0.4}
-                            dot={({ cx, cy, index }: any) => {
+                            dot={({ cx, cy, index }: { cx: number; cy: number; index: number }) => {
                               const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
                               return (
                                 <circle

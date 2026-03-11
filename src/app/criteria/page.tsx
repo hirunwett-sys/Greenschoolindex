@@ -1,10 +1,7 @@
 import { JSX } from 'react';
 import { 
   TreePine, 
-  Droplet, 
-  Zap, 
   Users, 
-  BookOpen, 
   Settings, 
   TrendingUp,
   Award
