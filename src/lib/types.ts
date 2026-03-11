@@ -5,6 +5,8 @@ export interface EvaluationResponse {
     area: string;
     staff: string;
     totalScore: number;
+    status: string;
+    verifiedAt: string | null;
     submittedAt: string;
     scores: ScoresData;
     evidence?: EvidenceData | null;

@@ -1,0 +1,10 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdminToken, COOKIE_NAME } from '@/lib/auth';
+
+export async function GET(request: NextRequest) {
+    const token = request.cookies.get(COOKIE_NAME)?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const payload = await verifyAdminToken(token);
+    if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ adminId: payload.adminId, username: payload.username, type: 'admin' });
+}

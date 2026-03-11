@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { EvaluationResponse, CreateEvaluationRequest, ErrorResponse } from "@/lib/types";
+import { verifyUserToken, USER_COOKIE_NAME } from "@/lib/userAuth";
+import { verifyAdminToken, COOKIE_NAME as ADMIN_COOKIE_NAME } from "@/lib/auth";
 
 export async function GET(): Promise<NextResponse<EvaluationResponse[] | ErrorResponse>> {
     try {
@@ -25,6 +27,8 @@ export async function GET(): Promise<NextResponse<EvaluationResponse[] | ErrorRe
             area: evaluation.area,
             staff: evaluation.staff,
             totalScore: evaluation.totalScore,
+            status: evaluation.status,
+            verifiedAt: evaluation.verifiedAt?.toISOString() ?? null,
             submittedAt: evaluation.submittedAt.toISOString(),
             scores: {
             sti1: scoreData?.sti1 ?? 0,
@@ -91,6 +95,12 @@ export async function POST(
         );
         }
 
+        // Associate submission with logged-in user or admin
+        const userToken = request.cookies.get(USER_COOKIE_NAME)?.value;
+        const userPayload = userToken ? await verifyUserToken(userToken) : null;
+        const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+        const adminPayload = (!userPayload && adminToken) ? await verifyAdminToken(adminToken) : null;
+
         const newEvaluation = await prisma.school.create({
         data: {
             schoolName: body.schoolName,
@@ -98,6 +108,8 @@ export async function POST(
             area: body.area,
             staff: body.staff,
             totalScore: body.totalScore,
+            ...(userPayload?.userId ? { user: { connect: { id: userPayload.userId } } } : {}),
+            ...(adminPayload?.adminId ? { admin: { connect: { id: adminPayload.adminId } } } : {}),
             scores: {
             create: {
                 sti1: body.scores.sti1 ?? 0,
@@ -153,6 +165,8 @@ export async function POST(
         area: newEvaluation.area,
         staff: newEvaluation.staff,
         totalScore: newEvaluation.totalScore,
+        status: newEvaluation.status,
+        verifiedAt: newEvaluation.verifiedAt?.toISOString() ?? null,
         submittedAt: newEvaluation.submittedAt.toISOString(),
         scores: {
             sti1: scoreData?.sti1 ?? 0,

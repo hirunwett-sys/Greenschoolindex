@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { JSX } from 'react';
+import { useToast } from '@/components/ToastProvider';
 import { 
   TreePine, 
   Droplet, 
@@ -145,6 +146,7 @@ interface EvidenceFile {
 
 export default function EvaluatePage(): JSX.Element {
   const router = useRouter();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState<FormData>({
     schoolName: '',
     coverage: '',
@@ -209,7 +211,7 @@ export default function EvaluatePage(): JSX.Element {
 
     // Validate file type
     if (file.type !== 'application/pdf') {
-      alert('กรุณาเลือกไฟล์ PDF เท่านั้น');
+      showToast('กรุณาเลือกไฟล์ PDF เท่านั้น', 'error');
       e.target.value = '';
       return;
     }
@@ -217,7 +219,7 @@ export default function EvaluatePage(): JSX.Element {
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      alert('ขนาดไฟล์ต้องไม่เกิน 10MB');
+      showToast('ขนาดไฟล์ต้องไม่เกิน 10MB', 'error');
       e.target.value = '';
       return;
     }
@@ -242,7 +244,7 @@ export default function EvaluatePage(): JSX.Element {
       }
     } catch (error) {
       console.error('Error converting file to base64:', error);
-      alert('เกิดข้อผิดพลาดในการประมวลผลไฟล์');
+      showToast('เกิดข้อผิดพลาดในการประมวลผลไฟล์', 'error');
       e.target.value = '';
     } finally {
       setIsProcessingFile(false);
@@ -296,14 +298,19 @@ export default function EvaluatePage(): JSX.Element {
     return Object.keys(newErrors).length === 0;
   };
 
+  // realScore = (selectedScore / 7) * maxScore  (score normalization)
+  const normalizeScore = (rawScore: number, maxScore: number): number => {
+    return (rawScore / 7) * maxScore;
+  };
+
   const calculateTotalScore = (): number => {
     let total = 0;
     gsiCriteria.forEach((criterion) => {
       criterion.subCriteria.forEach((sub) => {
-        total += formData.scores[sub.id] || 0;
+        total += normalizeScore(formData.scores[sub.id] || 0, sub.maxScore);
       });
     });
-    return total;
+    return Math.round(total * 100) / 100;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -320,6 +327,14 @@ export default function EvaluatePage(): JSX.Element {
       const totalScore = calculateTotalScore();
       const coverageThai = formData.coverage ? coverageOptions[formData.coverage as keyof typeof coverageOptions] : '';
 
+      // Normalize scores: realScore = (selectedScore / 7) * maxScore
+      const normalizedScores: Record<string, number> = {};
+      gsiCriteria.forEach((criterion) => {
+        criterion.subCriteria.forEach((sub) => {
+          normalizedScores[sub.id] = normalizeScore(formData.scores[sub.id] || 0, sub.maxScore);
+        });
+      });
+
       const response = await fetch('/api/evaluations', {
         method: 'POST',
         headers: {
@@ -330,7 +345,7 @@ export default function EvaluatePage(): JSX.Element {
           coverage: coverageThai, 
           area: formData.area,
           staff: formData.staff,
-          scores: formData.scores,
+          scores: normalizedScores,
           totalScore,
           evidence: evidenceFile?.base64Data ? {
             fileName: evidenceFile.fileName,
@@ -348,11 +363,10 @@ export default function EvaluatePage(): JSX.Element {
       const result = await response.json();
 
       sessionStorage.setItem('newEvaluationId', result.id);
-
-      router.push('/summary');
+      router.push('/my-submissions');
     } catch (error) {
       console.error('Error submitting evaluation:', error);
-      alert('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง');
+      showToast('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง', 'error');
       setIsSubmitting(false);
     }
   };
@@ -522,7 +536,7 @@ export default function EvaluatePage(): JSX.Element {
                       </h3>
                       
                       <div className="flex flex-wrap gap-2">
-                        {Array.from({ length: sub.maxScore + 1 }, (_, i) => i).map((score) => (
+                        {Array.from({ length: 8 }, (_, i) => i).map((score) => (
                           <button
                             key={score}
                             type="button"

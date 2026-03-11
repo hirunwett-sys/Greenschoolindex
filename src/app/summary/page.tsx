@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { JSX } from 'react';
+import { useToast } from '@/components/ToastProvider';
 import { 
   TreePine, 
   Droplet, 
@@ -182,6 +183,8 @@ interface EvaluationData {
   staff: string;
   scores: Record<string, number>;
   totalScore: number;
+  status: string;
+  verifiedAt: string | null;
   submittedAt: string;
   evidence?: EvidenceData | null; 
 }
@@ -377,69 +380,12 @@ const DeleteModal = ({ isOpen, schoolName, onConfirm, onCancel, isDeleting }: De
     </div>
   );
 };
-interface ToastComponentProps {
-  toast: Toast;
-  onClose: (id: number) => void;
-}
-
-const ToastComponent = ({ toast, onClose }: ToastComponentProps) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose(toast.id);
-    }, 4000);
-
-    return () => clearTimeout(timer);
-  }, [toast.id, onClose]);
-
-  const icons = {
-    success: <CheckCircle className="w-5 h-5 text-green-500" />,
-    error: <AlertCircle className="w-5 h-5 text-red-500" />,
-    info: <AlertCircle className="w-5 h-5 text-blue-500" />
-  };
-
-  const bgColors = {
-    success: 'bg-green-50 border-green-200',
-    error: 'bg-red-50 border-red-200',
-    info: 'bg-blue-50 border-blue-200'
-  };
-
-  return (
-    <div className={`${bgColors[toast.type]} border-2 rounded-xl p-4 shadow-lg animate-slide-in-right flex items-start gap-3 min-w-[320px] max-w-md`}>
-      <div className="flex-shrink-0 mt-0.5">
-        {icons[toast.type]}
-      </div>
-      <div className="flex-1">
-        <p className="font-body text-sm text-gray-900">{toast.message}</p>
-      </div>
-      <button
-        onClick={() => onClose(toast.id)}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-};
-
-interface ToastContainerProps {
-  toasts: Toast[];
-  onClose: (id: number) => void;
-}
-
-const ToastContainer = ({ toasts, onClose }: ToastContainerProps) => {
-  return (
-    <div className="fixed top-4 right-4 z-[100] space-y-2">
-      {toasts.map((toast) => (
-        <ToastComponent key={toast.id} toast={toast} onClose={onClose} />
-      ))}
-    </div>
-  );
-};
 
 const ITEMS_PER_PAGE = 10;
 
 export default function SummaryPage(): JSX.Element | null {
   const router = useRouter();
+  const { showToast } = useToast();
   const [evaluations, setEvaluations] = useState<EvaluationData[]>([]);
   const [filteredEvaluations, setFilteredEvaluations] = useState<EvaluationData[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<EvaluationData | null>(null);
@@ -449,10 +395,10 @@ export default function SummaryPage(): JSX.Element | null {
   const [strengths, setStrengths] = useState<string[]>([]);
   const [improvements, setImprovements] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
   const [schoolToDelete, setSchoolToDelete] = useState<EvaluationData | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
   
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -460,16 +406,7 @@ export default function SummaryPage(): JSX.Element | null {
   const [filterRating, setFilterRating] = useState<string>('all');
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
-    const newToast: Toast = {
-      id: Date.now(),
-      type,
-      message
-    };
-    setToasts(prev => [...prev, newToast]);
-  };
-
-  const removeToast = (id: number) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    showToast(message, type);
   };
 
   useEffect(() => {
@@ -478,6 +415,8 @@ export default function SummaryPage(): JSX.Element | null {
       setNewSubmissionId(newId);
       sessionStorage.removeItem('newEvaluationId');
     }
+    // Check if admin
+    fetch('/api/admin/me').then((r) => { if (r.ok) setIsAdmin(true); });
     loadEvaluations();
   }, []);
 
@@ -750,85 +689,75 @@ ${criterion.subCriteria.map(sub =>
 
   return (
     <>
-      <ToastContainer toasts={toasts} onClose={removeToast} />
-
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="bg-white border-b border-gray-200 shadow-sm">
-          <div className="max-w-[1800px] mx-auto px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="font-display text-3xl font-bold text-primary mb-1">
-                  ผลการประเมิน GSI
-                </h1>
-                <p className="font-body text-gray-600">
-                  ภาพรวมและการจัดอันดับโรงเรียนทั้งหมด {evaluations.length} แห่ง
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/evaluate')}
-                className="inline-flex items-center bg-gradient-to-r from-primary to-secondary text-white font-display font-semibold px-3 py-3 md:px-6 md:py-3 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300"
-              >
-                <Plus className="w-5 h-5 md:mr-2" />
-                <span className="hidden md:inline">เพิ่มการประเมินใหม่</span>
-              </button>
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page title */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="font-display text-2xl font-bold text-gray-900 leading-none">ผลการประเมิน GSI</h1>
+              <p className="font-body text-sm text-gray-500 mt-0.5">ภาพรวมและการจัดอันดับโรงเรียนทั้งหมด {evaluations.length} แห่ง</p>
             </div>
+            <button
+              onClick={() => router.push('/evaluate')}
+              className="inline-flex items-center bg-gradient-to-r from-primary to-secondary text-white font-body font-semibold px-4 py-2.5 rounded-xl hover:shadow-md hover:scale-[1.02] transition-all duration-200 text-sm"
+            >
+              <Plus className="w-4 h-4 mr-0 md:mr-2" />
+              <span className="hidden md:inline">เพิ่มการประเมินใหม่</span>
+            </button>
           </div>
-        </div>
-
-        <div className="max-w-[1800px] mx-auto px-6 py-6">
           {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-3 md:p-6 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 font-body mb-1">คะแนนเฉลี่ย</p>
-                  <p className="text-3xl font-bold text-primary font-display">{avgScore}</p>
+                  <p className="text-xs md:text-sm text-gray-600 font-body mb-0.5 md:mb-1">คะแนนเฉลี่ย</p>
+                  <p className="text-xl md:text-3xl font-bold text-primary font-display">{avgScore}</p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-primary" />
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center">
+                  <Activity className="w-4 h-4 md:w-6 md:h-6 text-primary" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-xl shadow-sm p-3 md:p-6 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 font-body mb-1">คะแนนสูงสุด</p>
-                  <p className="text-3xl font-bold text-green-600 font-display">{maxScore}</p>
+                  <p className="text-xs md:text-sm text-gray-600 font-body mb-0.5 md:mb-1">คะแนนสูงสุด</p>
+                  <p className="text-xl md:text-3xl font-bold text-green-600 font-display">{maxScore}</p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-xl shadow-sm p-3 md:p-6 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 font-body mb-1">คะแนนต่ำสุด</p>
-                  <p className="text-3xl font-bold text-orange-600 font-display">{minScore}</p>
+                  <p className="text-xs md:text-sm text-gray-600 font-body mb-0.5 md:mb-1">คะแนนต่ำสุด</p>
+                  <p className="text-xl md:text-3xl font-bold text-orange-600 font-display">{minScore}</p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl flex items-center justify-center">
-                  <TrendingDown className="w-6 h-6 text-orange-600" />
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl flex items-center justify-center">
+                  <TrendingDown className="w-4 h-4 md:w-6 md:h-6 text-orange-600" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-xl shadow-sm p-3 md:p-6 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 font-body mb-1">โรงเรียนทั้งหมด</p>
-                  <p className="text-3xl font-bold text-blue-600 font-display">{evaluations.length}</p>
+                  <p className="text-xs md:text-sm text-gray-600 font-body mb-0.5 md:mb-1">โรงเรียนทั้งหมด</p>
+                  <p className="text-xl md:text-3xl font-bold text-blue-600 font-display">{evaluations.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center">
-                  <Building className="w-6 h-6 text-blue-600" />
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center">
+                  <Building className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-1 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-4">
               <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                 <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -944,11 +873,27 @@ ${criterion.subCriteria.map(sub =>
                                   </h4>
                                   <div className="flex items-center gap-2 mb-2">
                                     <span className="font-body text-xs text-gray-600">
-                                      {evaluation.totalScore} คะแนน
+                                      {evaluation.totalScore.toFixed(1)} คะแนน
                                     </span>
                                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${evalRating.bgColor} ${evalRating.textColor}`}>
                                       {evalRating.level}
                                     </span>
+                                  </div>
+                                  {/* Evidence/Verification Status */}
+                                  <div className="mb-2">
+                                    {evaluation.status === 'verified' ? (
+                                      <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-body">
+                                        <CheckCircle className="w-3 h-3" />ตรวจสอบแล้ว
+                                      </span>
+                                    ) : evaluation.evidence ? (
+                                      <span className="inline-flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-body">
+                                        <AlertCircle className="w-3 h-3" />รอผู้ดูแลตรวจสอบหลักฐาน
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-body">
+                                        <AlertCircle className="w-3 h-3" />รอส่งหลักฐาน
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                                     <div
@@ -960,6 +905,7 @@ ${criterion.subCriteria.map(sub =>
                               </div>
                             </button>
 
+                            {isAdmin && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -970,6 +916,7 @@ ${criterion.subCriteria.map(sub =>
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
+                            )}
                           </div>
                         );
                       })}
@@ -1017,7 +964,7 @@ ${criterion.subCriteria.map(sub =>
               </div>
             </div>
 
-            <div className="xl:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-4">
               {/* School Header */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <div className="flex items-start justify-between mb-4">
@@ -1030,6 +977,20 @@ ${criterion.subCriteria.map(sub =>
                       {isNewSubmission && (
                         <span className="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
                           ใหม่
+                        </span>
+                      )}
+                      {/* Status badge */}
+                      {selectedSchool.status === 'verified' ? (
+                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                          <CheckCircle className="w-3.5 h-3.5" />ตรวจสอบแล้ว
+                        </span>
+                      ) : selectedSchool.evidence ? (
+                        <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full">
+                          <AlertCircle className="w-3.5 h-3.5" />รอผู้ดูแลตรวจสอบหลักฐาน
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
+                          <AlertCircle className="w-3.5 h-3.5" />รอส่งหลักฐาน
                         </span>
                       )}
                     </div>
@@ -1065,9 +1026,9 @@ ${criterion.subCriteria.map(sub =>
                     <div className={`inline-block ${rating.bgColor} ${rating.textColor} px-4 py-1.5 rounded-full font-display text-sm font-semibold mb-2`}>
                       {rating.level}
                     </div>
-                    <div className="text-sm text-gray-600 font-body">
+                    {/* <div className="text-sm text-gray-600 font-body">
                       {percentage.toFixed(1)}% จากคะแนนเต็ม
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 

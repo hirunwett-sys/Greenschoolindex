@@ -38,6 +38,8 @@ export async function GET(
         area: evaluation.area,
         staff: evaluation.staff,
         totalScore: evaluation.totalScore,
+        status: evaluation.status,
+        verifiedAt: evaluation.verifiedAt?.toISOString() ?? null,
         submittedAt: evaluation.submittedAt.toISOString(),
         scores: {
             sti1: scoreData?.sti1 ?? 0,

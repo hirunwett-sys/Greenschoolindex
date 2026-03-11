@@ -15,4 +15,7 @@ export default defineConfig({
   datasource: {
     url: DATABASE_URL,
   },
+  seed: {
+    run: "node prisma/seed.js",
+  },
 });
