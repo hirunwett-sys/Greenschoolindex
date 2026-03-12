@@ -1217,10 +1217,10 @@ ${criterion.subCriteria.map(sub =>
                         <span className="font-body text-sm text-gray-700 font-medium">{category.name}</span>
                         <div className="flex items-center gap-2">
                           <span className="font-display text-sm font-semibold text-gray-900">
-                            {category.score}/{category.maxScore}
+                            {parseFloat(Number(category.score).toFixed(2))}/{category.maxScore}
                           </span>
                           <span className="text-xs text-gray-500">
-                            ({category.percentage.toFixed(0)}%)
+                            ({parseFloat(category.percentage.toFixed(2))}%)
                           </span>
                         </div>
                       </div>
