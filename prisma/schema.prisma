@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  schools School[]
+
+  @@map("admins")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  schools School[]
+
+  @@map("users")
+}
+
+model School {
+  id          String    @id @default(cuid())
+  schoolName  String    @map("school_name")
+  coverage    String?   // whole, building, full
+  area        String    // พื้นที่ใช้สอยรวม (ตร.ม.)
+  staff       String    // จำนวนบุคลากร
+  totalScore  Float     @map("total_score")
+  status      String    @default("pending") // pending, verified
+  verifiedAt  DateTime? @map("verified_at")
+  userId      String?   @map("user_id")
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminId     String?   @map("admin_id")
+  admin       Admin?    @relation(fields: [adminId], references: [id])
+  submittedAt DateTime  @default(now()) @map("submitted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  scores Score[]
+  evidences Evidence[]
+
+  @@map("schools")
+}
+
+model Score {
+  id        String   @id @default(cuid())
+  schoolId  String   @map("school_id")
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  // Site, Transportation & Infrastructure (STI)
+  sti1      Float    @default(0) // การจัดการที่ดินและพื้นที่สีเขียว
+  sti1Reason String  @default("") @map("sti1_reason")
+  sti2      Float    @default(0) // การเดินทางที่ยั่งยืน
+  sti2Reason String  @default("") @map("sti2_reason")
+  sti3      Float    @default(0) // โครงสร้างพื้นฐานคาร์บอนต่ำ/EV
+  sti3Reason String  @default("") @map("sti3_reason")
+  sti4      Float    @default(0) // การเข้าถึงพื้นที่สำหรับทุกคน
+  sti4Reason String  @default("") @map("sti4_reason")
+  
+  // Water & Material Resources (WMR)
+  wmr1      Float    @default(0) // วัดและลดการใช้น้ำ
+  wmr1Reason String  @default("") @map("wmr1_reason")
+  wmr2      Float    @default(0) // น้ำทางเลือก/น้ำใช้ซ้ำ
+  wmr2Reason String  @default("") @map("wmr2_reason")
+  wmr3      Float    @default(0) // ลดของเสีย/รีไซเคิล
+  wmr3Reason String  @default("") @map("wmr3_reason")
+  wmr4      Float    @default(0) // จัดซื้อวัสดุอย่างยั่งยืน
+  wmr4Reason String  @default("") @map("wmr4_reason")
+  wmr5      Float    @default(0) // เศรษฐกิจหมุนเวียน
+  wmr5Reason String  @default("") @map("wmr5_reason")
+  
+  // Energy, Carbon & Climate (ECC)
+  ecc1      Float    @default(0) // ข้อมูลและติดตามพลังงาน
+  ecc1Reason String  @default("") @map("ecc1_reason")
+  ecc2      Float    @default(0) // ประสิทธิภาพพลังงาน
+  ecc2Reason String  @default("") @map("ecc2_reason")
+  ecc3      Float    @default(0) // พลังงานหมุนเวียน
+  ecc3Reason String  @default("") @map("ecc3_reason")
+  ecc4      Float    @default(0) // คำนวณและรายงาน GHG
+  ecc4Reason String  @default("") @map("ecc4_reason")
+  ecc5      Float    @default(0) // เป้าหมาย/แผนลดคาร์บอน
+  ecc5Reason String  @default("") @map("ecc5_reason")
+  
+  // Health, Wellbeing & Quality of Life (HWQ)
+  hwq1      Float    @default(0) // คุณภาพอากาศ แสง ความสบาย
+  hwq1Reason String  @default("") @map("hwq1_reason")
+  hwq2      Float    @default(0) // สุขภาพและความปลอดภัย
+  hwq2Reason String  @default("") @map("hwq2_reason")
+  hwq3      Float    @default(0) // Universal Design
+  hwq3Reason String  @default("") @map("hwq3_reason")
+  
+  // Governance, Planning & Management (GPM)
+  gpm1      Float    @default(0) // โครงสร้างบริหารความยั่งยืน
+  gpm1Reason String  @default("") @map("gpm1_reason")
+  gpm2      Float    @default(0) // แผน เป้าหมาย ตัวชี้วัด
+  gpm2Reason String  @default("") @map("gpm2_reason")
+  gpm3      Float    @default(0) // รายงานและปรับปรุงต่อเนื่อง
+  gpm3Reason String  @default("") @map("gpm3_reason")
+  
+  // Innovation & Local Priorities (ILP)
+  ilp1      Float    @default(0) // นวัตกรรมเกินเกณฑ์
+  ilp1Reason String  @default("") @map("ilp1_reason")
+  ilp2      Float    @default(0) // ตอบโจทย์บริบทพื้นที่
+  ilp2Reason String  @default("") @map("ilp2_reason")
+  
+  // Education, Research & Engagement (ERE)
+  ere1      Float    @default(0) // นโยบายโรงเรียนสีเขียว
+  ere1Reason String  @default("") @map("ere1_reason")
+  ere2      Float    @default(0) // แผนงานและงบประมาณ
+  ere2Reason String  @default("") @map("ere2_reason")
+  ere3      Float    @default(0) // ระบบติดตามและรายงานผล
+  ere3Reason String  @default("") @map("ere3_reason")
+  ere4      Float    @default(0) // พัฒนาและปรับปรุงต่อเนื่อง
+  ere4Reason String  @default("") @map("ere4_reason")
+  ere5      Float    @default(0) // ถ่ายทอดสู่ชุมชน/สังคม
+  ere5Reason String  @default("") @map("ere5_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([schoolId])
+  @@map("scores")
+}
+
+model Evidence {
+  id          String   @id @default(cuid())
+  schoolId    String   @map("school_id")
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  fileName    String   @map("file_name")
+  fileData    String   @map("file_data") @db.Text // เก็บ base64 string
+  fileSize    Int      @map("file_size") // in bytes
+  mimeType    String   @default("application/pdf") @map("mime_type")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("evidences")
+}

@@ -1,0 +1,302 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { EvaluationResponse, CreateEvaluationRequest, ErrorResponse } from "@/lib/types";
+import { verifyUserToken, USER_COOKIE_NAME } from "@/lib/userAuth";
+import { verifyAdminToken, COOKIE_NAME as ADMIN_COOKIE_NAME } from "@/lib/auth";
+
+export async function GET(): Promise<NextResponse<EvaluationResponse[] | ErrorResponse>> {
+    try {
+        const evaluations = await prisma.school.findMany({
+        include: {
+            scores: true,
+            evidences: true,
+        },
+        orderBy: {
+            totalScore: 'desc', 
+        },
+        });
+
+        const response: EvaluationResponse[] = evaluations.map((evaluation) => {
+        const scoreData = evaluation.scores[0]; 
+        const evidenceData = evaluation.evidences[0];
+        
+        return {
+            id: evaluation.id,
+            schoolName: evaluation.schoolName,
+            coverage: evaluation.coverage,
+            area: evaluation.area,
+            staff: evaluation.staff,
+            totalScore: evaluation.totalScore,
+            status: evaluation.status,
+            verifiedAt: evaluation.verifiedAt?.toISOString() ?? null,
+            submittedAt: evaluation.submittedAt.toISOString(),
+            scores: {
+            sti1: scoreData?.sti1 ?? 0,
+            sti1Reason: scoreData?.sti1Reason ?? '',
+            sti2: scoreData?.sti2 ?? 0,
+            sti2Reason: scoreData?.sti2Reason ?? '',
+            sti3: scoreData?.sti3 ?? 0,
+            sti3Reason: scoreData?.sti3Reason ?? '',
+            sti4: scoreData?.sti4 ?? 0,
+            sti4Reason: scoreData?.sti4Reason ?? '',
+            wmr1: scoreData?.wmr1 ?? 0,
+            wmr1Reason: scoreData?.wmr1Reason ?? '',
+            wmr2: scoreData?.wmr2 ?? 0,
+            wmr2Reason: scoreData?.wmr2Reason ?? '',
+            wmr3: scoreData?.wmr3 ?? 0,
+            wmr3Reason: scoreData?.wmr3Reason ?? '',
+            wmr4: scoreData?.wmr4 ?? 0,
+            wmr4Reason: scoreData?.wmr4Reason ?? '',
+            wmr5: scoreData?.wmr5 ?? 0,
+            wmr5Reason: scoreData?.wmr5Reason ?? '',
+            ecc1: scoreData?.ecc1 ?? 0,
+            ecc1Reason: scoreData?.ecc1Reason ?? '',
+            ecc2: scoreData?.ecc2 ?? 0,
+            ecc2Reason: scoreData?.ecc2Reason ?? '',
+            ecc3: scoreData?.ecc3 ?? 0,
+            ecc3Reason: scoreData?.ecc3Reason ?? '',
+            ecc4: scoreData?.ecc4 ?? 0,
+            ecc4Reason: scoreData?.ecc4Reason ?? '',
+            ecc5: scoreData?.ecc5 ?? 0,
+            ecc5Reason: scoreData?.ecc5Reason ?? '',
+            hwq1: scoreData?.hwq1 ?? 0,
+            hwq1Reason: scoreData?.hwq1Reason ?? '',
+            hwq2: scoreData?.hwq2 ?? 0,
+            hwq2Reason: scoreData?.hwq2Reason ?? '',
+            hwq3: scoreData?.hwq3 ?? 0,
+            hwq3Reason: scoreData?.hwq3Reason ?? '',
+            gpm1: scoreData?.gpm1 ?? 0,
+            gpm1Reason: scoreData?.gpm1Reason ?? '',
+            gpm2: scoreData?.gpm2 ?? 0,
+            gpm2Reason: scoreData?.gpm2Reason ?? '',
+            gpm3: scoreData?.gpm3 ?? 0,
+            gpm3Reason: scoreData?.gpm3Reason ?? '',
+            ilp1: scoreData?.ilp1 ?? 0,
+            ilp1Reason: scoreData?.ilp1Reason ?? '',
+            ilp2: scoreData?.ilp2 ?? 0,
+            ilp2Reason: scoreData?.ilp2Reason ?? '',
+            ere1: scoreData?.ere1 ?? 0,
+            ere1Reason: scoreData?.ere1Reason ?? '',
+            ere2: scoreData?.ere2 ?? 0,
+            ere2Reason: scoreData?.ere2Reason ?? '',
+            ere3: scoreData?.ere3 ?? 0,
+            ere3Reason: scoreData?.ere3Reason ?? '',
+            ere4: scoreData?.ere4 ?? 0,
+            ere4Reason: scoreData?.ere4Reason ?? '',
+            ere5: scoreData?.ere5 ?? 0,
+            ere5Reason: scoreData?.ere5Reason ?? '',
+            },
+            evidence: evidenceData ? {
+            id: evidenceData.id,
+            fileName: evidenceData.fileName,
+            fileData: evidenceData.fileData,
+            fileSize: evidenceData.fileSize,
+            mimeType: evidenceData.mimeType,
+            createdAt: evidenceData.createdAt.toISOString(),
+            } : null,
+        };
+        });
+
+        return NextResponse.json(response);
+    } catch (error) {
+        console.error("Error fetching evaluations:", error);
+        return NextResponse.json(
+        { 
+            error: "Failed to fetch evaluations",
+            details: error instanceof Error ? error.message : "Unknown error"
+        },
+        { status: 500 }
+        );
+    }
+}
+
+export async function POST(
+    request: NextRequest
+    ): Promise<NextResponse<EvaluationResponse | ErrorResponse>> {
+    try {
+        const body: CreateEvaluationRequest = await request.json();
+        if (!body.schoolName || !body.area || !body.staff || !body.scores) {
+        return NextResponse.json(
+            { error: "Missing required fields" },
+            { status: 400 }
+        );
+        }
+
+        // Associate submission with logged-in user or admin
+        const userToken = request.cookies.get(USER_COOKIE_NAME)?.value;
+        const userPayload = userToken ? await verifyUserToken(userToken) : null;
+        const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+        const adminPayload = (!userPayload && adminToken) ? await verifyAdminToken(adminToken) : null;
+
+        const newEvaluation = await prisma.school.create({
+        data: {
+            schoolName: body.schoolName,
+            coverage: body.coverage || null,
+            area: body.area,
+            staff: body.staff,
+            totalScore: body.totalScore,
+            ...(userPayload?.userId ? { user: { connect: { id: userPayload.userId } } } : {}),
+            ...(adminPayload?.adminId ? { admin: { connect: { id: adminPayload.adminId } } } : {}),
+            scores: {
+            create: {
+                sti1: body.scores.sti1 ?? 0,
+                sti1Reason: body.reasons?.sti1 ?? '',
+                sti2: body.scores.sti2 ?? 0,
+                sti2Reason: body.reasons?.sti2 ?? '',
+                sti3: body.scores.sti3 ?? 0,
+                sti3Reason: body.reasons?.sti3 ?? '',
+                sti4: body.scores.sti4 ?? 0,
+                sti4Reason: body.reasons?.sti4 ?? '',
+                wmr1: body.scores.wmr1 ?? 0,
+                wmr1Reason: body.reasons?.wmr1 ?? '',
+                wmr2: body.scores.wmr2 ?? 0,
+                wmr2Reason: body.reasons?.wmr2 ?? '',
+                wmr3: body.scores.wmr3 ?? 0,
+                wmr3Reason: body.reasons?.wmr3 ?? '',
+                wmr4: body.scores.wmr4 ?? 0,
+                wmr4Reason: body.reasons?.wmr4 ?? '',
+                wmr5: body.scores.wmr5 ?? 0,
+                wmr5Reason: body.reasons?.wmr5 ?? '',
+                ecc1: body.scores.ecc1 ?? 0,
+                ecc1Reason: body.reasons?.ecc1 ?? '',
+                ecc2: body.scores.ecc2 ?? 0,
+                ecc2Reason: body.reasons?.ecc2 ?? '',
+                ecc3: body.scores.ecc3 ?? 0,
+                ecc3Reason: body.reasons?.ecc3 ?? '',
+                ecc4: body.scores.ecc4 ?? 0,
+                ecc4Reason: body.reasons?.ecc4 ?? '',
+                ecc5: body.scores.ecc5 ?? 0,
+                ecc5Reason: body.reasons?.ecc5 ?? '',
+                hwq1: body.scores.hwq1 ?? 0,
+                hwq1Reason: body.reasons?.hwq1 ?? '',
+                hwq2: body.scores.hwq2 ?? 0,
+                hwq2Reason: body.reasons?.hwq2 ?? '',
+                hwq3: body.scores.hwq3 ?? 0,
+                hwq3Reason: body.reasons?.hwq3 ?? '',
+                gpm1: body.scores.gpm1 ?? 0,
+                gpm1Reason: body.reasons?.gpm1 ?? '',
+                gpm2: body.scores.gpm2 ?? 0,
+                gpm2Reason: body.reasons?.gpm2 ?? '',
+                gpm3: body.scores.gpm3 ?? 0,
+                gpm3Reason: body.reasons?.gpm3 ?? '',
+                ilp1: body.scores.ilp1 ?? 0,
+                ilp1Reason: body.reasons?.ilp1 ?? '',
+                ilp2: body.scores.ilp2 ?? 0,
+                ilp2Reason: body.reasons?.ilp2 ?? '',
+                ere1: body.scores.ere1 ?? 0,
+                ere1Reason: body.reasons?.ere1 ?? '',
+                ere2: body.scores.ere2 ?? 0,
+                ere2Reason: body.reasons?.ere2 ?? '',
+                ere3: body.scores.ere3 ?? 0,
+                ere3Reason: body.reasons?.ere3 ?? '',
+                ere4: body.scores.ere4 ?? 0,
+                ere4Reason: body.reasons?.ere4 ?? '',
+                ere5: body.scores.ere5 ?? 0,
+                ere5Reason: body.reasons?.ere5 ?? '',
+            },
+            },
+            evidences: body.evidence ? {
+            create: {
+                fileName: body.evidence.fileName,
+                fileData: body.evidence.fileData,
+                fileSize: body.evidence.fileSize,
+            }
+            } : undefined,
+        },
+        include: {
+            scores: true,
+            evidences: true,
+        },
+        });
+
+        const scoreData = newEvaluation.scores[0];
+        const evidenceData = newEvaluation.evidences[0];
+        
+        const response: EvaluationResponse = {
+        id: newEvaluation.id,
+        schoolName: newEvaluation.schoolName,
+        coverage: newEvaluation.coverage,
+        area: newEvaluation.area,
+        staff: newEvaluation.staff,
+        totalScore: newEvaluation.totalScore,
+        status: newEvaluation.status,
+        verifiedAt: newEvaluation.verifiedAt?.toISOString() ?? null,
+        submittedAt: newEvaluation.submittedAt.toISOString(),
+        scores: {
+            sti1: scoreData?.sti1 ?? 0,
+            sti1Reason: scoreData?.sti1Reason ?? '',
+            sti2: scoreData?.sti2 ?? 0,
+            sti2Reason: scoreData?.sti2Reason ?? '',
+            sti3: scoreData?.sti3 ?? 0,
+            sti3Reason: scoreData?.sti3Reason ?? '',
+            sti4: scoreData?.sti4 ?? 0,
+            sti4Reason: scoreData?.sti4Reason ?? '',
+            wmr1: scoreData?.wmr1 ?? 0,
+            wmr1Reason: scoreData?.wmr1Reason ?? '',
+            wmr2: scoreData?.wmr2 ?? 0,
+            wmr2Reason: scoreData?.wmr2Reason ?? '',
+            wmr3: scoreData?.wmr3 ?? 0,
+            wmr3Reason: scoreData?.wmr3Reason ?? '',
+            wmr4: scoreData?.wmr4 ?? 0,
+            wmr4Reason: scoreData?.wmr4Reason ?? '',
+            wmr5: scoreData?.wmr5 ?? 0,
+            wmr5Reason: scoreData?.wmr5Reason ?? '',
+            ecc1: scoreData?.ecc1 ?? 0,
+            ecc1Reason: scoreData?.ecc1Reason ?? '',
+            ecc2: scoreData?.ecc2 ?? 0,
+            ecc2Reason: scoreData?.ecc2Reason ?? '',
+            ecc3: scoreData?.ecc3 ?? 0,
+            ecc3Reason: scoreData?.ecc3Reason ?? '',
+            ecc4: scoreData?.ecc4 ?? 0,
+            ecc4Reason: scoreData?.ecc4Reason ?? '',
+            ecc5: scoreData?.ecc5 ?? 0,
+            ecc5Reason: scoreData?.ecc5Reason ?? '',
+            hwq1: scoreData?.hwq1 ?? 0,
+            hwq1Reason: scoreData?.hwq1Reason ?? '',
+            hwq2: scoreData?.hwq2 ?? 0,
+            hwq2Reason: scoreData?.hwq2Reason ?? '',
+            hwq3: scoreData?.hwq3 ?? 0,
+            hwq3Reason: scoreData?.hwq3Reason ?? '',
+            gpm1: scoreData?.gpm1 ?? 0,
+            gpm1Reason: scoreData?.gpm1Reason ?? '',
+            gpm2: scoreData?.gpm2 ?? 0,
+            gpm2Reason: scoreData?.gpm2Reason ?? '',
+            gpm3: scoreData?.gpm3 ?? 0,
+            gpm3Reason: scoreData?.gpm3Reason ?? '',
+            ilp1: scoreData?.ilp1 ?? 0,
+            ilp1Reason: scoreData?.ilp1Reason ?? '',
+            ilp2: scoreData?.ilp2 ?? 0,
+            ilp2Reason: scoreData?.ilp2Reason ?? '',
+            ere1: scoreData?.ere1 ?? 0,
+            ere1Reason: scoreData?.ere1Reason ?? '',
+            ere2: scoreData?.ere2 ?? 0,
+            ere2Reason: scoreData?.ere2Reason ?? '',
+            ere3: scoreData?.ere3 ?? 0,
+            ere3Reason: scoreData?.ere3Reason ?? '',
+            ere4: scoreData?.ere4 ?? 0,
+            ere4Reason: scoreData?.ere4Reason ?? '',
+            ere5: scoreData?.ere5 ?? 0,
+            ere5Reason: scoreData?.ere5Reason ?? '',
+        },
+        evidence: evidenceData ? {
+            id: evidenceData.id,
+            fileName: evidenceData.fileName,
+            fileData: evidenceData.fileData,
+            fileSize: evidenceData.fileSize,
+            mimeType: evidenceData.mimeType,
+            createdAt: evidenceData.createdAt.toISOString(),
+        } : null,
+        };
+
+        return NextResponse.json(response, { status: 201 });
+    } catch (error) {
+        console.error("Error creating evaluation:", error);
+        return NextResponse.json(
+        { 
+            error: "Failed to create evaluation",
+            details: error instanceof Error ? error.message : "Unknown error"
+        },
+        { status: 500 }
+        );
+    }
+}
